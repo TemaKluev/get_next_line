@@ -6,37 +6,11 @@
 /*   By: artemkliuiev <artemkliuiev@student.42.f    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/07/29 10:19:05 by artemkliuie       #+#    #+#             */
-/*   Updated: 2024/08/07 18:23:11 by artemkliuie      ###   ########.fr       */
+/*   Updated: 2024/08/09 17:31:39 by artemkliuie      ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "get_next_line.h"
-
-char	*ft_strjoin(char *s1, char *s2)
-{
-	int		i;
-	int		j;
-	char	*str;
-
-	i = chrsearch(s1, '0') + chrsearch(s2, '0');
-	if (!i)
-		return (NULL);
-	str = malloc(sizeof(char) * (i + 1));
-	if (str == NULL)
-		return (NULL);
-	i = 0;
-	j = 0;
-	if (s1)
-		while (s1[i] != '\0')
-		{
-			str[i] = s1[i];
-			i++;
-		}
-	while (s2[j] != '\0')
-		str[i++] = s2[j++];
-	str[i] = '\0';
-	return (str);
-}
 
 int	chrsearch(const char *s, char type)
 {
@@ -64,92 +38,150 @@ int	chrsearch(const char *s, char type)
 	return (i);
 }
 
-char	*str_line(char *s1, int i)
+char	*ft_get_line(char *main_str)
 {
-	int		j;
-	int		k;
-	char	*s2;
+	int		i;
+	char	*line;
 
-	j = 0;
-	k = 0;
-	if (i == 1)
-		i = (chrsearch(s1, 'n') + 1);
-	else if (i == 5)
-	{
-		i = (chrsearch(s1, '0') - chrsearch(s1, 'n') + 1);
-		j = chrsearch(s1, 'n') + 1;
-	}
-	s2 = malloc(i * sizeof(char));
-	if (!s2)
+	i = 0;
+	if (!main_str[i])
 		return (NULL);
-	while (k < i)
-		s2[k++] = s1[j++];
-	s2[k] = '\0';
-	return (s2);
+	while (main_str[i] && main_str[i] != '\n')
+		i++;
+	line = (char *)malloc(sizeof(char) * (i + 2));
+	if (!line)
+		return (NULL);
+	i = 0;
+	while (main_str[i] && main_str[i] != '\n')
+	{
+		line[i] = main_str[i];
+		i++;
+	}
+	if (main_str[i] == '\n')
+	{
+		line[i] = main_str[i];
+		i++;
+	}
+	line[i] = '\0';
+	return (line);
 }
 
-char	*str_read(int fd, char *leftstr)
+char	*new_main_str(char *main_str)
+{
+	int		i;
+	int		j;
+	char	*new_str;
+
+	i = 0;
+	while (main_str[i] && main_str[i] != '\n')
+		i++;
+	if (!main_str[i])
+	{
+		free(main_str);
+		return (NULL);
+	}
+	new_str = (char *)malloc(sizeof(char) * (chrsearch(main_str, '0') - i + 1));
+	if (!new_str)
+		return (NULL);
+	i++;
+	j = 0;
+	while (main_str[i])
+		new_str[j++] = main_str[i++];
+	new_str[j] = '\0';
+	free(main_str);
+	return (new_str);
+}
+
+char	*str_read(int fd, char *main_str)
 {
 	int		rd_bytes;
-	char	*str;
+	char	*new_str;
 
-	str = malloc((BUFFER_SIZE + 1) * sizeof(char));
-	if (!str)
+	new_str = malloc((BUFFER_SIZE + 1) * sizeof(char));
+	if (!new_str)
 		return (NULL);
 	rd_bytes = 1;
-	while (!chrsearch(leftstr, 's') && rd_bytes != 0)
+	while (!chrsearch(main_str, 's') && rd_bytes != 0)
 	{
-		rd_bytes = read(fd, str, BUFFER_SIZE);
+		rd_bytes = read(fd, new_str, BUFFER_SIZE);
 		if (rd_bytes == -1)
 		{
-			free (str);
+			free (new_str);
 			return (NULL);
 		}
-		str[rd_bytes] = '\0';
-		leftstr = ft_strjoin(leftstr, str);
+		new_str[rd_bytes] = '\0';
+		main_str = ft_strjoin(main_str, new_str);
 	}
-	free(str);
-	return (leftstr);
+	free(new_str);
+	return (main_str);
 }
 
 char	*get_next_line(int fd)
 {
 	char		*line;
-	static char	*str;
+	static char	*main_str;
 
 	if (fd < 0 || BUFFER_SIZE <= 0)
-		return (0);
-	str = str_read(fd, str);
-	printf("str = %s\n", str);
-	if (!str)
 		return (NULL);
-	line = str_line(str, 1);
-	str = str_line(str, 5);
+	main_str = str_read(fd, main_str);
+	if (!main_str)
+		return (NULL);
+	line = ft_get_line(main_str);
+	main_str = new_main_str(main_str);
 	return (line);
 }
 
-int main(void)
-{
-	int		text1;
-	//int		text2;
-	int		i;
-	char	*line;
+// int main(void)
+// {
+// 	int		text1;
+// 	//int		text2;
+// 	int		i;
+// 	char	*line;
 
-	text1 = open("tests/test.txt", O_RDONLY);
-	//text2 = open("tests/test2.txt", O_RDONLY);
-	i = 0;
-	while (i < 8)
-	{
-		printf ("run: %d\n", i);
-		line = get_next_line(text1);
-		printf("main: %s\n\n", line);
-		free(line);
-		// line = get_next_line(text2);
-		// printf("main: %s\n\n", line);
-		// free(line);
-		i++;
-	}
-	close(text1);
-	//close(text2);
-	return(0);
-}
+// 	text1 = open("tests/read_error.txt", O_RDONLY);
+// 	//text2 = open("tests/test2.txt", O_RDONLY);
+// 	i = 0;
+// 	while (i < 8)
+// 	{
+// 		printf ("run: %d\n", i);
+// 		line = get_next_line(text1);
+// 		printf("main: %s\n\n", line);
+// 		free(line);
+// 		// line = get_next_line(text2);
+// 		// printf("main: %s\n\n", line);
+// 		// free(line);
+// 		i++;
+// 	}
+// 	close(text1);
+// 	//close(text2);
+// 	return(0);
+// }
+
+// char	*str_line(char *s1, int s)
+// {
+// 	int		j;
+// 	int		k;
+// 	int		i;
+// 	char	*s2;
+
+// 	j = 0;
+// 	k = 0;
+// 	if (!s1[j])
+// 		return (NULL);
+// 	if (s == 1)
+// 		i = (chrsearch(s1, 'n') + 1);
+// 	else if (s == 5)
+// 	{
+// 		i = (chrsearch(s1, '0') - chrsearch(s1, 'n') + 1);
+// 		j = chrsearch(s1, 'n') + 1;
+// 	}
+// 	s2 = malloc(i * sizeof(char));
+// 	if (!s2)
+// 		return (NULL);
+// 	while (k < i)
+// 		s2[k++] = s1[j++];
+// 	s2[k] = '\0';
+// 	if (s == 5)
+// 		free(s1);
+// 	return (s2);
+// }
